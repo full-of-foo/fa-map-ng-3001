@@ -95,11 +95,21 @@ d3.json("../../build/us.json", function(error, us) {
       .attr("transform", function(d) { return "translate(" + path.centroid(d) + ")"; })
       .attr("r", function(d) { return radius(d.properties.population); })
       .style("visibility", "hidden")
-    .append("title")
-      .text(function(d) {
-        return d.properties.name
-            + "\nPopulation " + formatNumber(d.properties.population);
-      });
+      .transition()
+        .each(function(d, i) {
+          d3.select(this)
+            .transition()
+              .duration(2000)
+              .delay(i * 2000)
+              .style("visibility", "visible")
+              .transition()
+                .style("visibility", "hidden");
+        });
+    // .append("title")
+    //   .text(function(d) {
+    //     return d.properties.name
+    //         + "\nPopulation " + formatNumber(d.properties.population);
+    //   });
 });
 
 d3.select(self.frameElement).style("height", height + "px");
