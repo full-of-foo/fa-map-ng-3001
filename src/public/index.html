@@ -154,8 +154,6 @@ d3.json("../../build/us.json", function(error, us) {
               .each("start", function(){ this.dispatchEvent(new CustomEvent("shown"));})
               .style("visibility", "visible")
               .each("end", function(){ this.dispatchEvent(new CustomEvent("hidden"));})
-              .transition()
-                .style("visibility", "hidden")
         })
 });
 
