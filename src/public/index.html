@@ -17,6 +17,11 @@ svg {
   fill: #ddd;
 }
 
+.background {
+  fill: none;
+  pointer-events: all;
+}
+
 .border {
   fill: none;
   stroke: #fff;
@@ -33,6 +38,23 @@ svg {
 
 .bubble :hover {
   stroke: #000;
+}
+
+#states {
+  fill: #aaa;
+}
+
+#states .active {
+  fill: orange;
+}
+
+#state-borders {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.5px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  pointer-events: none;
 }
 
 .d3-tip {
@@ -89,7 +111,8 @@ svg {
 <script>
 
 var width = 960,
-    height = 600;
+    height = 600,
+    centered;
 
 var formatNumber = d3.format(",.0f");
 
@@ -98,6 +121,12 @@ var path = d3.geo.path().projection(null);
 var svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height);
+
+svg.append("rect")
+    .attr("class", "background")
+    .attr("width", width)
+    .attr("height", height)
+    .on("click", zoom);
 
 var tip = d3.tip()
     .attr('class', 'd3-tip')
@@ -112,52 +141,49 @@ var tip = d3.tip()
     .direction('n')
     .offset([-3, 0])
 
+var g = svg.append("g");
+
 d3.json("../../build/us.json", function(error, us) {
   if (error) return console.error(error);
 
-  svg.append("path")
-      .datum(topojson.feature(us, us.objects.nation))
-      .attr("class", "land")
-      .attr("d", path);
+  g.append("g")
+      .attr("id", "states")
+    .selectAll("path")
+      .data(topojson.feature(us, us.objects.states).features)
+    .enter().append("path")
+      .attr("d", path)
+      .on("click", zoom);
 
-  svg.append("path")
+  g.append("path")
       .datum(topojson.mesh(us, us.objects.states, function(a, b) { return a !== b; }))
-      .attr("class", "border border--state")
+      .attr("id", "state-borders")
       .attr("d", path);
-
-
-  // load all circles into canvas and hide all
-  svg.append("g")
-      .call(tip)
-      .attr("class", "bubble")
-    .selectAll("circle")
-      .data(topojson.feature(us, us.objects.counties).features
-        .sort(function(a, b) { return b.properties.population - a.properties.population; }))
-    .enter().append("circle")
-      .attr("transform", function(d) { return "translate(" + path.centroid(d) + ")"; })
-      .style("visibility", "hidden")
-      .on('shown', tip.show)
-      .on('hidden', tip.hide)
-      .attr("r", function(d){
-        d['amount'] = (Math.random() * (3000 - 500) + 500).toFixed(2);
-        return (d['amount'] / 100) + 2;
-      }) // circle radius
-
-    // set animation for each circle
-    svg.selectAll("circle")
-      .transition()
-        .each(function(d, i) {
-          d3.select(this)
-            .transition()
-              .duration(2000)
-              .delay(i * 2000)
-              .each("start", function(){ this.dispatchEvent(new CustomEvent("shown"));})
-              .style("visibility", "visible")
-              .each("end", function(){ this.dispatchEvent(new CustomEvent("hidden"));})
-              .transition()
-                .style("visibility", "hidden")
-        })
 });
+
+function zoom(d) {
+  var x, y, k;
+
+  if (d && centered !== d) {
+    var centroid = path.centroid(d);
+    x = centroid[0];
+    y = centroid[1];
+    k = 4;
+    centered = d;
+  } else {
+    x = width / 2;
+    y = height / 2;
+    k = 1;
+    centered = null;
+  }
+
+  g.selectAll("path")
+      .classed("active", centered && function(d) { return d === centered; });
+
+  g.transition()
+      .duration(750)
+      .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
+      .style("stroke-width", 1.5 / k + "px");
+}
 
 d3.select(self.frameElement).style("height", height + "px");
 
