@@ -44,8 +44,10 @@ build/clean:
 
 clean: build/clean
 
-init: clean build
+init/npm:
 	npm install
+
+init: init/npm clean build
 
 start: init
 	python -m SimpleHTTPServer 8000
